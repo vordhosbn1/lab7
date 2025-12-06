@@ -273,30 +273,24 @@ app.post('/quotes/:id/delete', isUserAuthenticated, async (req, res) => {
 
 
 app.post('/loginProcess', async (req, res) => {
-    let username = req.body.username;
-    let password = req.body.password;
+    const { username, password } = req.body;
 
-    let hashedPassword = "";
-    let sql = `SELECT *
-               FROM users
-              WHERE username = ?`;
-    const [rows] = await pool.query(sql, [username]);
+    // Simple username+password check against DB
+    const sql = `SELECT *
+                 FROM users
+                 WHERE username = ? AND password = ?`;
 
-    if (rows.length > 0) { //username exists in the table
-        hashedPassword = rows[0].password;
-    }
+    const [rows] = await pool.query(sql, [username, password]);
 
-    const match = await bcrypt.compare(password, hashedPassword);
-
-    if (match) {
+    if (rows.length > 0) {
+        // Successful login
         req.session.isUserAuthenticated = true;
         req.session.fullName = rows[0].firstName + " " + rows[0].lastName;
-        res.redirect('/home');      
+        res.redirect('/home');
     } else {
+        // Invalid credentials
         res.render('login.ejs', { loginError: "Wrong Credentials" });
     }
-
-
 });
 
 app.get("/dbTest", async (req, res) => {
